@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta name="ms-sp-authoring-source" content="agent">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b2a4a">
+<title>Já É Jogos · Araraquara</title>
+
+<style>
+  :root{
+    --azul:#0b2a4a; --azul2:#12406f; --ouro:#f2b705; --bg:#f4f6fa; --card:#fff;
+    --txt:#1b2430; --sub:#5d6b7c; --borda:#e2e7ef; --ok:#16a34a; --perigo:#dc2626;
+    --raio:14px; --sombra:0 6px 24px rgba(11,42,74,.18);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--txt);background:var(--bg);overflow:hidden}
+  #map{position:fixed;inset:0;z-index:1}
+
+  /* Topo */
+  .topo{position:fixed;top:0;left:0;right:0;z-index:500;display:flex;align-items:center;gap:10px;
+    padding:calc(env(safe-area-inset-top) + 10px) 14px 10px;background:linear-gradient(135deg,var(--azul),var(--azul2));color:#fff;box-shadow:var(--sombra)}
+  .logo{background:var(--ouro);color:var(--azul);font-weight:900;border-radius:10px;padding:6px 9px;font-size:14px;letter-spacing:.5px}
+  .topo h1{font-size:15px;line-height:1.15}
+  .topo small{display:block;font-weight:400;opacity:.8;font-size:12px}
+  .topo .menu{margin-left:auto;background:rgba(255,255,255,.15);border:0;color:#fff;border-radius:10px;padding:8px 11px;font-size:18px;cursor:pointer}
+
+  /* Botões flutuantes */
+  .fabs{position:fixed;right:12px;z-index:500;display:flex;flex-direction:column;gap:10px;top:calc(env(safe-area-inset-top) + 76px)}
+  .fab{width:46px;height:46px;border-radius:50%;border:0;background:#fff;box-shadow:var(--sombra);font-size:20px;cursor:pointer}
+  .fab.ativo{background:var(--ouro)}
+
+  /* Painel (bottom sheet no celular / lateral no desktop) */
+  .painel{position:fixed;left:0;right:0;bottom:0;z-index:600;background:var(--card);border-radius:20px 20px 0 0;box-shadow:0 -8px 30px rgba(0,0,0,.18);
+    height:58vh;transition:height .25s ease;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom)}
+  .painel.fechado{height:118px}
+  .alca{width:100%;border:0;background:none;padding:8px 0 2px;cursor:pointer}
+  .alca span{display:block;margin:auto;width:44px;height:5px;border-radius:5px;background:#cfd6e0}
+  .abas{display:flex;gap:6px;padding:6px 12px 8px}
+  .aba{flex:1;border:0;background:var(--bg);border-radius:12px;padding:10px 4px;font-weight:700;font-size:13px;color:var(--sub);cursor:pointer}
+  .aba.on{background:var(--azul);color:#fff}
+  .conteudo{flex:1;overflow-y:auto;padding:4px 14px 18px}
+  .secao{display:none}.secao.on{display:block}
+
+  @media (min-width:900px){
+    .painel{top:72px;bottom:12px;left:12px;right:auto;width:390px;height:auto;border-radius:18px}
+    .painel.fechado{height:auto}
+    .alca{display:none}
+  }
+
+  /* Componentes */
+  h3{font-size:14px;margin:14px 0 8px;color:var(--azul)}
+  .card{background:var(--card);border:1px solid var(--borda);border-radius:var(--raio);padding:12px;margin-bottom:10px}
+  .card.destaque{border-color:var(--ouro);box-shadow:0 0 0 2px rgba(242,183,5,.25)}
+  .linha{display:flex;gap:8px;align-items:center}
+  .linha>*{flex:1}
+  label{display:block;font-size:12px;font-weight:600;color:var(--sub);margin:8px 0 4px}
+  input,select,textarea{width:100%;border:1px solid var(--borda);border-radius:10px;padding:10px;font-size:15px;background:#fff;color:var(--txt)}
+  textarea{min-height:56px;resize:vertical}
+  .btn{border:0;border-radius:10px;padding:10px 12px;font-weight:700;font-size:14px;cursor:pointer;background:var(--bg);color:var(--txt)}
+  .btn.pri{background:var(--azul);color:#fff}
+  .btn.ouro{background:var(--ouro);color:var(--azul)}
+  .btn.ok{background:var(--ok);color:#fff}
+  .btn.perigo{background:#fee2e2;color:var(--perigo)}
+  .btn.mini{padding:6px 9px;font-size:12px;border-radius:8px}
+  .btn.full{width:100%;margin-top:10px}
+  .acoes{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .tag{display:inline-block;font-size:11px;font-weight:700;padding:3px 7px;border-radius:20px;background:#e8eef7;color:var(--azul2);margin:2px 3px 0 0}
+  .tag.aviso{background:#fff4d6;color:#8a6100}
+  .sub{font-size:12px;color:var(--sub)}
+  .titulo-local{display:flex;align-items:center;gap:8px;font-weight:800}
+  .bolinha{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:11px;font-weight:900;flex:none}
+  .vs{font-weight:800;font-size:15px}
+  .data-grupo{font-size:12px;font-weight:800;text-transform:uppercase;color:var(--sub);margin:14px 0 6px;letter-spacing:.4px}
+  .hoje{color:var(--ok)}
+  .vazio{text-align:center;color:var(--sub);padding:22px 10px;font-size:14px}
+  .resumo-rota{display:flex;gap:10px;margin:10px 0}
+  .resumo-rota div{flex:1;background:var(--bg);border-radius:12px;padding:10px;text-align:center}
+  .resumo-rota b{display:block;font-size:20px;color:var(--azul)}
+  ol.passos{padding-left:20px;font-size:13px}
+  ol.passos li{padding:6px 0;border-bottom:1px dashed var(--borda)}
+  .seg{display:flex;background:var(--bg);border-radius:10px;padding:3px}
+  .seg button{flex:1;border:0;background:none;padding:8px;border-radius:8px;font-weight:700;cursor:pointer;color:var(--sub)}
+  .seg button.on{background:#fff;color:var(--azul);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+  .switch{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14px}
+
+  /* Pinos */
+  .pino{width:38px;height:38px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--c);border:3px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,.35);display:grid;place-items:center}
+  .pino span{transform:rotate(45deg);color:#fff;font-weight:900;font-size:11px}
+  .pino.aprox{outline:2px dashed #f2b705;outline-offset:2px}
+  .eu{width:18px;height:18px;border-radius:50%;background:#2563eb;border:3px solid #fff;box-shadow:0 0 0 6px rgba(37,99,235,.25)}
+  .leaflet-popup-content{margin:12px 14px;min-width:220px}
+  .leaflet-popup-content .acoes .btn{font-size:12px;padding:7px 9px}
+
+  /* Avisos */
+  #toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 74px);transform:translateX(-50%) translateY(-20px);opacity:0;z-index:1000;
+    background:var(--azul);color:#fff;padding:10px 16px;border-radius:30px;font-size:14px;font-weight:600;transition:.25s;pointer-events:none;max-width:90vw;text-align:center}
+  #toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+  #modoPin{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top) + 74px);z-index:900;background:var(--ouro);color:var(--azul);
+    font-weight:800;padding:10px 14px;border-radius:30px;box-shadow:var(--sombra);display:none;gap:10px;align-items:center;font-size:14px}
+  #modoPin.on{display:flex}
+  #modoPin button{border:0;background:var(--azul);color:#fff;border-radius:20px;padding:5px 10px;font-weight:700}
+
+  /* Menu */
+  .menu-box{position:fixed;top:calc(env(safe-area-inset-top) + 64px);right:12px;z-index:950;background:#fff;border-radius:14px;box-shadow:var(--sombra);padding:6px;display:none;min-width:230px}
+  .menu-box.on{display:block}
+  .menu-box button{display:block;width:100%;text-align:left;border:0;background:none;padding:11px 12px;font-size:14px;border-radius:8px;cursor:pointer}
+  .menu-box button:hover{background:var(--bg)}
+</style>
+</head>
+<body>
+
+<header class="topo">
+  <div class="logo">JJE/26</div>
+  <h1>Já É Jogos<small>Araraquara · SP</small></h1>
+  <button class="menu" id="btnMenu" aria-label="Menu">⋮</button>
+</header>
+
+<div class="menu-box" id="menuBox">
+  <button data-act="exportar">⬇️ Exportar dados (JSON)</button>
+  <button data-act="importar">⬆️ Importar dados (JSON)</button>
+  <button data-act="verTodos">🗺️ Ver todos os locais</button>
+  <button data-act="resetar">♻️ Restaurar dados originais</button>
+</div>
+<input type="file" id="arqImport" accept=".json,application/json" hidden>
+
+<div id="map"></div>
+
+<div class="fabs">
+  <button class="fab" id="fabEu" title="Onde estou">📍</button>
+  <button class="fab" id="fabSeguir" title="Seguir minha posição">🧭</button>
+  <button class="fab" id="fabTodos" title="Ver todos os locais">🗺️</button>
+</div>
+
+<div id="modoPin"><span>Toque no mapa para posicionar</span><button id="cancelaPin">Cancelar</button></div>
+<div id="toast"></div>
+
+<section class="painel" id="painel">
+  <button class="alca" id="alca" aria-label="Abrir/fechar painel"><span></span></button>
+  <nav class="abas">
+    <button class="aba on" data-aba="locais">📍 Locais</button>
+    <button class="aba" data-aba="jogos">🏆 Jogos</button>
+    <button class="aba" data-aba="rota">🧭 Rota</button>
+  </nav>
+
+  <div class="conteudo">
+    <!-- LOCAIS -->
+    <div class="secao on" id="sec-locais">
+      <div id="listaLocais"></div>
+
+      <h3 id="tituloFormLocal">➕ Novo local</h3>
+      <div class="card">
+        <input type="hidden" id="lId">
+        <div class="linha">
+          <div style="flex:0 0 80px"><label>Sigla</label><input id="lSigla" maxlength="4" placeholder="G4"></div>
+          <div><label>Nome</label><input id="lNome" placeholder="Ex.: Ginásio Municipal"></div>
+        </div>
+        <label>Endereço</label>
+        <input id="lEnd" placeholder="Rua, número, bairro, cidade">
+        <label>Modalidades (separe por vírgula)</label>
+        <input id="lMod" list="modalidades" placeholder="Futsal, Vôlei">
+        <label>Cor do pino</label>
+        <input id="lCor" type="color" value="#7c3aed" style="height:42px;padding:4px">
+        <div class="acoes">
+          <button class="btn pri" data-act="geoLocal">🔎 Buscar endereço</button>
+          <button class="btn" data-act="pinLocal">👆 Marcar no mapa</button>
+        </div>
+        <p class="sub" id="lPos" style="margin-top:8px">Posição: ainda não definida</p>
+        <div class="acoes">
+          <button class="btn ok" data-act="salvarLocal" style="flex:1">💾 Salvar local</button>
+          <button class="btn" data-act="limparLocal">Limpar</button>
+        </div>
+      </div>
+      <div class="card switch">
+        <span>Permitir arrastar pinos para ajustar posição</span>
+        <input type="checkbox" id="arrastar" style="width:auto;transform:scale(1.3)">
+      </div>
+    </div>
+
+    <!-- JOGOS -->
+    <div class="secao" id="sec-jogos">
+      <div id="proximo"></div>
+      <div class="linha">
+        <div><label>Modalidade</label><select id="fMod"><option value="">Todas</option></select></div>
+        <div><label>Local</label><select id="fLocal"><option value="">Todos</option></select></div>
+      </div>
+      <div id="listaJogos"></div>
+
+      <h3 id="tituloFormJogo">➕ Cadastrar jogo</h3>
+      <div class="card">
+        <input type="hidden" id="jId">
+        <label>Modalidade</label>
+        <input id="jMod" list="modalidades" placeholder="Futsal masculino">
+        <div class="linha">
+          <div><label>Equipe A</label><input id="jA" placeholder="Atlética X"></div>
+          <div><label>Equipe B</label><input id="jB" placeholder="Atlética Y"></div>
+        </div>
+        <div class="linha">
+          <div><label>Data</label><input id="jData" type="date"></div>
+          <div><label>Hora</label><input id="jHora" type="time"></div>
+        </div>
+        <label>Local</label>
+        <select id="jLocal"></select>
+        <div class="linha">
+          <div><label>Fase</label><input id="jFase" placeholder="Grupo A, Semi, Final..."></div>
+          <div style="flex:0 0 110px"><label>Placar</label><input id="jPlacar" placeholder="2 x 1"></div>
+        </div>
+        <label>Observações</label>
+        <textarea id="jObs" placeholder="Quadra 2, levar documento..."></textarea>
+        <div class="acoes">
+          <button class="btn ok" data-act="salvarJogo" style="flex:1">💾 Salvar jogo</button>
+          <button class="btn" data-act="limparJogo">Limpar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROTA -->
+    <div class="secao" id="sec-rota">
+      <label>Saindo de</label>
+      <select id="rOrigem">
+        <option value="eu">📍 Minha localização atual</option>
+        <option value="end">✍️ Digitar um endereço</option>
+      </select>
+      <input id="rOrigemEnd" placeholder="Ex.: Hotel X, Av. Bento de Abreu, Araraquara" style="display:none;margin-top:6px">
+      <label>Indo para</label>
+      <select id="rDestino"></select>
+      <label>Como vai?</label>
+      <div class="seg" id="rModo">
+        <button class="on" data-modo="car">🚗 Carro</button>
+        <button data-modo="foot">🚶 A pé</button>
+      </div>
+      <button class="btn pri full" data-act="tracar">🧭 Traçar rota</button>
+
+      <div id="resultadoRota"></div>
+    </div>
+  </div>
+</section>
+
+<datalist id="modalidades">
+  <option>Futsal</option><option>Vôlei</option><option>Basquete</option><option>Handebol</option>
+  <option>FutCampo</option><option>Rugby</option><option>Tênis</option><option>Tênis de Mesa</option>
+  <option>Xadrez</option><option>Natação</option><option>Atletismo</option><option>Vôlei de Praia</option>
+</datalist>
+
+<script>
+(function(){
+ const el=document.getElementById('map'),bounds={south:-21.8245,north:-21.7445,west:-48.231,east:-48.121};
+ el.innerHTML='<svg viewBox="0 0 1000 800" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0;width:100%;height:100%"><rect width="1000" height="800" fill="#e9f0e8"/><path d="M0 160H1000M0 340H1000M0 520H1000M0 700H1000M130 0V800M340 0V800M550 0V800M760 0V800M930 0V800" stroke="#fff" stroke-width="24"/><path d="M0 160H1000M0 340H1000M0 520H1000M0 700H1000M130 0V800M340 0V800M550 0V800M760 0V800M930 0V800" stroke="#d6dcd2" stroke-width="2"/><path d="M0 610 Q250 450 450 510T1000 390" fill="none" stroke="#c9dceb" stroke-width="34"/><text x="26" y="48" fill="#35536a" font-size="24" font-family="system-ui" font-weight="700">ARARAQUARA · SP</text><text x="26" y="78" fill="#526778" font-size="15" font-family="system-ui">Mapa esquemático offline</text></svg>';
+ const pos=p=>({x:Math.max(2,Math.min(98,(p[1]-bounds.west)/(bounds.east-bounds.west)*100)),y:Math.max(4,Math.min(96,(bounds.north-p[0])/(bounds.north-bounds.south)*100))});
+ const map={_events:{},removeLayer(o){if(o&&o._el)o._el.remove();},on(n,f){this._events[n]=f;},setView(){return this;},fitBounds(){return this;},panTo(){return this;},flyTo(){return this;},closePopup(){}};
+ el.addEventListener('click',e=>{if(map._events.click){const r=el.getBoundingClientRect();map._events.click({latlng:{lat:bounds.north-(e.clientY-r.top)/r.height*(bounds.north-bounds.south),lng:bounds.west+(e.clientX-r.left)/r.width*(bounds.east-bounds.west)}});}});
+ window.L={map(){return map;},control:{zoom(){return{addTo(){}};}},tileLayer(){return{addTo(){return this;}};},divIcon(o){return o;},marker(p,o){const m={_p:p,_o:o||{},addTo(){const q=pos(this._p),d=document.createElement('div');d.style.cssText='position:absolute;left:'+q.x+'%;top:'+q.y+'%;transform:translate(-50%,-100%);z-index:10;cursor:pointer';d.innerHTML=this._o.icon&&this._o.icon.html||'<span style="font-size:28px">📍</span>';el.appendChild(d);this._el=d;return this;},bindPopup(){return this;},on(){return this;},setIcon(i){if(this._el)this._el.innerHTML=i.html;return this;},setLatLng(p){this._p=[p.lat,p.lng];const q=pos(this._p);if(this._el){this._el.style.left=q.x+'%';this._el.style.top=q.y+'%';}return this;},getLatLng(){return{lat:this._p[0],lng:this._p[1]};},openPopup(){return this;}};return m;},layerGroup(){return{addTo(){return this;}};},geoJSON(){return{getBounds(){return null;}};},circleMarker(){return{}}};
+})();
+</script>
+<script>
+(() => {
+  /* =================== DADOS INICIAIS =================== */
+  // Coordenadas aproximadas: o app tenta refinar sozinho pelo endereço
+  // e você pode ajustar arrastando o pino (ative "Permitir arrastar pinos").
+  const LOCAIS_PADRAO = [
+    {id:'g1', sigla:'G1', nome:'Gigantão', endereco:'Av. La Salle, s/n - Vila Ferroviária, Araraquara - SP',
+     modalidades:['Handebol','Futsal','Vôlei','Basquete'], cor:'#0b5cad', lat:-21.7787, lng:-48.1862, aprox:true},
+    {id:'g2', sigla:'G2', nome:'Ginásio Novênio Pavan', endereco:'Rua José Paulo Abi-Jaudi, 693 - Vila Cerqueira, Américo Brasiliense - SP',
+     modalidades:['Futsal','Vôlei'], cor:'#c2410c', lat:-21.7290, lng:-48.1090, aprox:true},
+    {id:'g3', sigla:'G3', nome:'Ginásio Dr. Flávio Ferraz de Carvalho', endereco:'Rua Itália Comito Lima, 438 - Jardim Eliana, Araraquara - SP',
+     modalidades:['Basquete','Vôlei'], cor:'#7c3aed', lat:-21.7960, lng:-48.1640, aprox:true},
+    {id:'fonte', sigla:'FL', nome:'Fonte Luminosa', endereco:'Rua Mauro Pinheiro, s/n - Vila Ferroviária, Araraquara - SP',
+     modalidades:['FutCampo'], cor:'#15803d', lat:-21.7795, lng:-48.1840, aprox:true},
+    {id:'cel', sigla:'CEL', nome:'Centro de Esportes e Lazer', endereco:'Rua Rafael Grecco, 16 - Jardim Mangiacapra, Araraquara - SP',
+     modalidades:['Rugby'], cor:'#b91c1c', lat:-21.8000, lng:-48.1950, aprox:true},
+    {id:'complexo', sigla:'CA', nome:'Complexo Araraquara', endereco:'Rua Mauro Pinheiro, 150 - Vila Ferroviária, Araraquara - SP',
+     modalidades:['Tênis'], cor:'#0e7490', lat:-21.7805, lng:-48.1850, aprox:true},
+    {id:'arena', sigla:'AR', nome:'Arena (Distrito CEAR)', endereco:'Rua Ivo Antônio Magnani, 430 - Fonte Luminosa, Araraquara - SP',
+     modalidades:[], cor:'#a16207', lat:-21.7765, lng:-48.1890, aprox:true}
+  ];
+  const CENTRO = [-21.7845, -48.1760];
+  const CHAVE = 'jje26-dados-v1';
+
+  /* =================== ESTADO =================== */
+  let estado = carregar() || {locais: clone(LOCAIS_PADRAO), jogos: [], atualizadoEm: 0, oficialVisto: 0};
+  let eu = null, marcadorEu = null, seguindo = false, watchId = null;
+  let camadaRota = null, modoRota = 'car', pinCallback = null, novoPinTemp = null, posNovoLocal = null;
+  const marcadores = {};
+
+  function clone(o){ return JSON.parse(JSON.stringify(o)); }
+  function carregar(){ try { return JSON.parse(localStorage.getItem(CHAVE)); } catch(e){ return null; } }
+  function salvar(){ localStorage.setItem(CHAVE, JSON.stringify(estado)); }
+  function uid(){ return Math.random().toString(36).slice(2,9); }
+  function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function $(id){ return document.getElementById(id); }
+  function local(id){ return estado.locais.find(l => l.id === id); }
+  function toast(msg, ms=2600){ const t=$('toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('on'), ms); }
+
+  /* =================== MAPA =================== */
+  const map = L.map('map', {zoomControl:false}).setView(CENTRO, 13);
+  L.control.zoom({position:'bottomright'}).addTo(map);
+  L.tileLayer('', {}).addTo(map);
+
+  function icone(l){
+    return L.divIcon({className:'', iconSize:[38,38], iconAnchor:[19,38], popupAnchor:[0,-34],
+      html:`<div class="pino ${l.aprox?'aprox':''}" style="--c:${esc(l.cor||'#0b2a4a')}"><span>${esc(l.sigla||'•')}</span></div>`});
+  }
+
+  function popupHTML(l){
+    const prox = jogosOrdenados().filter(j => j.localId === l.id && !jaPassou(j)).slice(0,3);
+    return `<div class="titulo-local"><span class="bolinha" style="background:${esc(l.cor)}">${esc(l.sigla)}</span>${esc(l.nome)}</div>
+      <p class="sub" style="margin:6px 0">${esc(l.endereco)}</p>
+      <div>${(l.modalidades||[]).map(m=>`<span class="tag">${esc(m)}</span>`).join('') || '<span class="tag">Modalidades a definir</span>'}
+      ${l.aprox?'<span class="tag aviso">posição aproximada</span>':''}</div>
+      ${prox.length ? `<p class="sub" style="margin-top:8px"><b>Próximos jogos:</b><br>${prox.map(j=>`${fmtDataCurta(j.data)} ${esc(j.hora||'')} · ${esc(j.modalidade)}: ${esc(j.timeA)} x ${esc(j.timeB)}`).join('<br>')}</p>`:''}
+      <div class="acoes">
+        <button class="btn pri" data-act="rotaPara" data-id="${l.id}">🧭 Rota</button>
+        <button class="btn" data-act="gmaps" data-id="${l.id}">Google Maps</button>
+        <button class="btn" data-act="waze" data-id="${l.id}">Waze</button>
+      </div>`;
+  }
+
+  function desenharMarcadores(){
+    Object.values(marcadores).forEach(m => map.removeLayer(m));
+    for (const k in marcadores) delete marcadores[k];
+    const podeArrastar = $('arrastar').checked;
+    estado.locais.forEach(l => {
+      const m = L.marker([l.lat, l.lng], {icon: icone(l), draggable: podeArrastar}).addTo(map);
+      m.bindPopup(() => popupHTML(l));
+      m.on('dragend', e => {
+        const p = e.target.getLatLng();
+        l.lat = p.lat; l.lng = p.lng; l.aprox = false; salvar();
+        m.setIcon(icone(l)); renderLocais(); toast(`📌 ${l.nome}: posição ajustada`);
+      });
+      marcadores[l.id] = m;
+    });
+  }
+
+  function verTodos(){
+    const pts = estado.locais.map(l => [l.lat, l.lng]);
+    if (eu) pts.push([eu.lat, eu.lng]);
+    if (pts.length) map.fitBounds(pts, {padding:[60,60], maxZoom:15});
+  }
+
+  function irPara(id){
+    const l = local(id); if(!l) return;
+    map.flyTo([l.lat, l.lng], 16, {duration:.8});
+    setTimeout(() => marcadores[id] && marcadores[id].openPopup(), 850);
+    if (window.innerWidth < 900) $('painel').classList.add('fechado');
+  }
+
+  /* =================== GEOCODIFICAÇÃO (OpenStreetMap / Nominatim) =================== */
+  async function geocodificar(q){
+    const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&accept-language=pt-BR'
+      + '&viewbox=-48.40,-21.60,-47.95,-21.95&q=' + encodeURIComponent(q);
+    throw new Error('Busca de endereço indisponível nesta visualização offline.');
+    const d = await r.json();
+    return d[0] ? {lat: +d[0].lat, lng: +d[0].lon, nome: d[0].display_name} : null;
+  }
+  function pertoDeAraraquara(p){ return p && Math.abs(p.lat - CENTRO[0]) < 0.3 && Math.abs(p.lng - CENTRO[1]) < 0.3; }
+  const espera = ms => new Promise(r => setTimeout(r, ms));
+
+  // Refina sozinho as posições aproximadas (1 consulta por segundo, só uma vez por local)
+  async function refinarAproximados(){
+    const pend = estado.locais.filter(l => l.aprox && !l.tentouGeo);
+    for (const l of pend){
+      try{
+        let p = await geocodificar(l.endereco);
+        if (!pertoDeAraraquara(p)) { await espera(1100); p = await geocodificar(l.nome + ', ' + (l.endereco.split(',').pop() || 'Araraquara')); }
+        if (pertoDeAraraquara(p)) { l.lat = p.lat; l.lng = p.lng; }
+      }catch(e){}
+      l.tentouGeo = true; salvar();
+      await espera(1100);
+    }
+    if (pend.length){ desenharMarcadores(); renderLocais(); }
+  }
+
+  /* =================== LOCALIZAÇÃO DO USUÁRIO =================== */
+  function atualizarEu(pos){
+    eu = {lat: pos.coords.latitude, lng: pos.coords.longitude};
+    const ic = L.divIcon({className:'', html:'<div class="eu"></div>', iconSize:[18,18], iconAnchor:[9,9]});
+    if (!marcadorEu) marcadorEu = L.marker([eu.lat, eu.lng], {icon: ic, zIndexOffset: 1000}).addTo(map).bindPopup('Você está aqui');
+    else marcadorEu.setLatLng([eu.lat, eu.lng]);
+    if (seguindo) map.panTo([eu.lat, eu.lng]);
+  }
+  function pegarMinhaPosicao(){
+    return new Promise((ok, erro) => {
+      if (!navigator.geolocation) return erro(new Error('Seu navegador não permite localização.'));
+      navigator.geolocation.getCurrentPosition(p => { atualizarEu(p); ok(eu); },
+        () => erro(new Error('Não consegui sua localização. Libere a permissão de localização do navegador.')),
+        {enableHighAccuracy:true, timeout:12000, maximumAge:15000});
+    });
+  }
+  function alternarSeguir(){
+    seguindo = !seguindo;
+    $('fabSeguir').classList.toggle('ativo', seguindo);
+    if (seguindo){
+      if (!navigator.geolocation) { toast('Localização indisponível'); seguindo=false; return; }
+      watchId = navigator.geolocation.watchPosition(atualizarEu, () => toast('Sem sinal de localização'), {enableHighAccuracy:true});
+      if (eu) map.setView([eu.lat, eu.lng], 17);
+      toast('🧭 Seguindo sua posição');
+    } else {
+      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+      watchId = null; toast('Parou de seguir');
+    }
+  }
+
+  /* =================== ROTAS =================== */
+  const MODIF = {'left':'à esquerda','right':'à direita','slight left':'levemente à esquerda','slight right':'levemente à direita',
+    'sharp left':'acentuadamente à esquerda','sharp right':'acentuadamente à direita','straight':'em frente','uturn':'o retorno'};
+  function textoPasso(s){
+    const m = s.maneuver, via = s.name ? ` na <b>${esc(s.name)}</b>` : '', mod = MODIF[m.modifier] || '';
+    switch(m.type){
+      case 'depart': return `Saia${via}`;
+      case 'arrive': return `🏁 Chegada ao destino`;
+      case 'roundabout': case 'rotary': return `Na rotatória, pegue a ${m.exit||1}ª saída${via}`;
+      case 'turn': case 'end of road': return m.modifier==='uturn' ? `Faça o retorno${via}` : `Vire ${mod}${via}`;
+      case 'fork': return `Na bifurcação, mantenha-se ${mod}${via}`;
+      case 'merge': return `Entre ${mod}${via}`;
+      case 'on ramp': return `Pegue o acesso${via}`;
+      case 'off ramp': return `Pegue a saída${via}`;
+      default: return `Continue${mod && m.modifier!=='straight' ? ' '+mod : ''}${via}`;
+    }
+  }
+  const fmtDist = m => m >= 1000 ? (m/1000).toFixed(1).replace('.',',')+' km' : Math.round(m)+' m';
+  const fmtTempo = s => { const min = Math.round(s/60); return min < 60 ? min+' min' : Math.floor(min/60)+'h'+String(min%60).padStart(2,'0'); };
+
+  async function tracarRota(){
+    const destId = $('rDestino').value, d = local(destId);
+    if (!d) return toast('Escolha o destino');
+    const box = $('resultadoRota');
+    box.innerHTML = '<p class="vazio">Calculando rota…</p>';
+    let o;
+    try{
+      if ($('rOrigem').value === 'eu') o = await pegarMinhaPosicao();
+      else if ($('rOrigem').value === 'end'){
+        const q = $('rOrigemEnd').value.trim();
+        if (!q) { box.innerHTML=''; return toast('Digite o endereço de saída'); }
+        o = await geocodificar(/araraquara|américo|americo/i.test(q) ? q : q + ', Araraquara - SP');
+        if (!o) throw new Error('Endereço de saída não encontrado. Tente incluir número e bairro.');
+      } else { const l = local($('rOrigem').value); o = {lat:l.lat, lng:l.lng}; }
+
+      const base = modoRota === 'foot' ? 'https://routing.openstreetmap.de/routed-foot' : 'https://routing.openstreetmap.de/routed-car';
+      const url = `${base}/route/v1/driving/${o.lng},${o.lat};${d.lng},${d.lat}?overview=full&geometries=geojson&steps=true`;
+      throw new Error('O cálculo de rotas requer serviço online, indisponível nesta visualização.');
+      if (!j.routes || !j.routes.length) throw new Error('Não encontrei rota entre esses pontos.');
+      const rota = j.routes[0];
+
+      if (camadaRota) map.removeLayer(camadaRota);
+      camadaRota = L.layerGroup([
+        L.geoJSON(rota.geometry, {style:{color:'#ffffff', weight:9, opacity:.9}}),
+        L.geoJSON(rota.geometry, {style:{color: modoRota==='foot' ? '#16a34a' : '#2563eb', weight:5, dashArray: modoRota==='foot'?'2 9':null}}),
+        L.circleMarker([o.lat, o.lng], {radius:7, color:'#fff', weight:3, fillColor:'#111', fillOpacity:1})
+      ]).addTo(map);
+      map.fitBounds(L.geoJSON(rota.geometry).getBounds(), {padding:[50,50]});
+
+      const passos = rota.legs[0].steps.filter(s => s.distance > 0 || s.maneuver.type === 'arrive');
+      box.innerHTML = `
+        <div class="resumo-rota"><div><b>${fmtTempo(rota.duration)}</b><span class="sub">tempo estimado</span></div>
+        <div><b>${fmtDist(rota.distance)}</b><span class="sub">distância</span></div></div>
+        <p class="sub">Destino: <b>${esc(d.nome)}</b> · ${esc(d.endereco)}</p>
+        <div class="acoes">
+          <button class="btn ouro" data-act="gmaps" data-id="${d.id}">Abrir no Google Maps</button>
+          <button class="btn ouro" data-act="waze" data-id="${d.id}">Abrir no Waze</button>
+          <button class="btn" data-act="seguirRota">🧭 Seguir minha posição</button>
+          <button class="btn perigo" data-act="limparRota">✕ Limpar rota</button>
+        </div>
+        <h3>Passo a passo</h3>
+        <ol class="passos">${passos.map(s => `<li>${textoPasso(s)} <span class="sub">· ${fmtDist(s.distance)}</span></li>`).join('')}</ol>`;
+      if (window.innerWidth < 900) $('painel').classList.add('fechado');
+      toast(`🧭 ${fmtTempo(rota.duration)} até ${d.nome}`);
+    }catch(e){
+      box.innerHTML = `<p class="vazio">⚠️ ${esc(e.message || 'Falha ao calcular a rota. Verifique a internet.')}</p>`;
+    }
+  }
+
+  function abrirExterno(tipo, id){
+    const l = local(id); if (!l) return;
+    const url = tipo === 'waze'
+      ? `https://waze.com/ul?ll=${l.lat},${l.lng}&navigate=yes`
+      : `https://www.google.com/maps/dir/?api=1&destination=${l.lat},${l.lng}&travelmode=${modoRota==='foot'?'walking':'driving'}`;
+    window.open(url, '_blank');
+  }
+
+  /* =================== LOCAIS (UI) =================== */
+  function renderLocais(){
+    const box = $('listaLocais');
+    box.innerHTML = estado.locais.map(l => {
+      const n = estado.jogos.filter(j => j.localId === l.id && !jaPassou(j)).length;
+      return `<div class="card">
+        <div class="titulo-local"><span class="bolinha" style="background:${esc(l.cor)}">${esc(l.sigla)}</span>${esc(l.nome)}</div>
+        <p class="sub" style="margin:4px 0">${esc(l.endereco)}</p>
+        <div>${(l.modalidades||[]).map(m=>`<span class="tag">${esc(m)}</span>`).join('')}
+        ${n?`<span class="tag" style="background:#dcfce7;color:#166534">${n} jogo(s)</span>`:''}
+        ${l.aprox?'<span class="tag aviso">posição aproximada</span>':''}</div>
+        <div class="acoes">
+          <button class="btn mini pri" data-act="ver" data-id="${l.id}">📍 Ver</button>
+          <button class="btn mini" data-act="rotaPara" data-id="${l.id}">🧭 Rota</button>
+          <button class="btn mini" data-act="editarLocal" data-id="${l.id}">✏️ Editar</button>
+          <button class="btn mini perigo" data-act="excluirLocal" data-id="${l.id}">🗑</button>
+        </div></div>`;
+    }).join('') || '<p class="vazio">Nenhum local cadastrado.</p>';
+    atualizarSelects();
+  }
+
+  function limparFormLocal(){
+    ['lId','lSigla','lNome','lEnd','lMod'].forEach(i => $(i).value = '');
+    $('lCor').value = '#7c3aed'; posNovoLocal = null;
+    $('lPos').textContent = 'Posição: ainda não definida';
+    $('tituloFormLocal').textContent = '➕ Novo local';
+    if (novoPinTemp) { map.removeLayer(novoPinTemp); novoPinTemp = null; }
+  }
+
+  function definirPosNovo(p, origem){
+    posNovoLocal = {lat:p.lat, lng:p.lng};
+    $('lPos').textContent = `Posição: ${p.lat.toFixed(5)}, ${p.lng.toFixed(5)} (${origem}) ✅`;
+    if (novoPinTemp) map.removeLayer(novoPinTemp);
+    novoPinTemp = L.marker([p.lat, p.lng], {draggable:true, icon: icone({sigla: $('lSigla').value || 'NOVO', cor: $('lCor').value})}).addTo(map);
+    novoPinTemp.on('dragend', e => definirPosNovo(e.target.getLatLng(), 'ajustado'));
+    map.flyTo([p.lat, p.lng], 16);
+  }
+
+  async function buscarEnderecoLocal(){
+    const q = $('lEnd').value.trim();
+    if (!q) return toast('Digite o endereço');
+    toast('🔎 Buscando…');
+    try{
+      const p = await geocodificar(q);
+      if (!p) return toast('Não achei. Use "Marcar no mapa".', 3500);
+      definirPosNovo(p, 'pelo endereço');
+      toast('Achei! Arraste o pino se precisar ajustar.');
+    }catch(e){ toast('Erro na busca. Tente "Marcar no mapa".'); }
+  }
+
+  function salvarLocal(){
+    const id = $('lId').value, nome = $('lNome').value.trim();
+    if (!nome) return toast('Dê um nome ao local');
+    const dados = {
+      sigla: ($('lSigla').value.trim() || nome.slice(0,2)).toUpperCase(),
+      nome, endereco: $('lEnd').value.trim(),
+      modalidades: $('lMod').value.split(',').map(s => s.trim()).filter(Boolean),
+      cor: $('lCor').value
+    };
+    if (id){
+      const l = local(id); Object.assign(l, dados);
+      if (posNovoLocal) Object.assign(l, posNovoLocal, {aprox:false});
+    } else {
+      if (!posNovoLocal) return toast('Defina a posição: busque o endereço ou marque no mapa');
+      estado.locais.push({id: uid(), ...dados, ...posNovoLocal, aprox:false});
+    }
+    salvar(); limparFormLocal(); desenharMarcadores(); renderLocais(); renderJogos();
+    toast('✅ Local salvo');
+  }
+
+  function editarLocal(id){
+    const l = local(id); if (!l) return;
+    $('lId').value = l.id; $('lSigla').value = l.sigla; $('lNome').value = l.nome; $('lEnd').value = l.endereco;
+    $('lMod').value = (l.modalidades||[]).join(', '); $('lCor').value = l.cor || '#7c3aed';
+    posNovoLocal = null;
+    $('lPos').textContent = `Posição atual: ${l.lat.toFixed(5)}, ${l.lng.toFixed(5)} — busque o endereço ou marque no mapa para mudar`;
+    $('tituloFormLocal').textContent = `✏️ Editando: ${l.nome}`;
+    $('tituloFormLocal').scrollIntoView({behavior:'smooth'});
+  }
+
+  function excluirLocal(id){
+    const l = local(id); if (!l) return;
+    const n = estado.jogos.filter(j => j.localId === id).length;
+    if (!confirm(`Excluir "${l.nome}"?${n ? `\n${n} jogo(s) vinculados também serão excluídos.` : ''}`)) return;
+    estado.locais = estado.locais.filter(x => x.id !== id);
+    estado.jogos = estado.jogos.filter(j => j.localId !== id);
+    salvar(); desenharMarcadores(); renderLocais(); renderJogos(); toast('Local excluído');
+  }
+
+  function ativarModoPin(cb){
+    pinCallback = cb; $('modoPin').classList.add('on');
+    if (window.innerWidth < 900) $('painel').classList.add('fechado');
+  }
+  function desativarModoPin(){ pinCallback = null; $('modoPin').classList.remove('on'); }
+  map.on('click', e => {
+    if (!pinCallback) return;
+    const cb = pinCallback; desativarModoPin(); cb(e.latlng);
+    $('painel').classList.remove('fechado');
+  });
+
+  /* =================== JOGOS (UI) =================== */
+  const hojeISO = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
+  function dataHora(j){ return new Date(`${j.data || '2100-01-01'}T${j.hora || '23:59'}`); }
+  function jaPassou(j){ return dataHora(j).getTime() + 2*3600e3 < Date.now(); } // considera 2h de jogo
+  function jogosOrdenados(){ return [...estado.jogos].sort((a,b) => dataHora(a) - dataHora(b)); }
+  function fmtDataLonga(iso){
+    if (!iso) return 'Sem data';
+    const d = new Date(iso + 'T12:00');
+    const txt = d.toLocaleDateString('pt-BR', {weekday:'long', day:'2-digit', month:'long'});
+    return iso === hojeISO() ? `Hoje · ${txt}` : txt;
+  }
+  function fmtDataCurta(iso){ return iso ? iso.split('-').reverse().slice(0,2).join('/') : ''; }
+
+  function renderJogos(){
+    const fm = $('fMod').value, fl = $('fLocal').value;
+    const lista = jogosOrdenados().filter(j => (!fm || j.modalidade === fm) && (!fl || j.localId === fl));
+
+    // Próximo jogo em destaque
+    const prox = jogosOrdenados().find(j => !jaPassou(j));
+    $('proximo').innerHTML = prox ? `<h3>⏭️ Próximo jogo</h3>${cardJogo(prox, true)}` : '';
+
+    if (!lista.length){ $('listaJogos').innerHTML = '<p class="vazio">Nenhum jogo cadastrado ainda.<br>Use o formulário abaixo 👇</p>'; return; }
+    let html = '', dataAtual = null;
+    lista.forEach(j => {
+      if (j.data !== dataAtual){
+        dataAtual = j.data;
+        html += `<div class="data-grupo ${j.data===hojeISO()?'hoje':''}">${fmtDataLonga(j.data)}</div>`;
+      }
+      html += cardJogo(j);
+    });
+    $('listaJogos').innerHTML = html;
+  }
+
+  function cardJogo(j, destaque){
+    const l = local(j.localId) || {nome:'Local removido', cor:'#999', sigla:'?'};
+    const passou = jaPassou(j);
+    return `<div class="card ${destaque?'destaque':''}" style="${passou?'opacity:.6':''}">
+      <div class="linha" style="align-items:flex-start">
+        <div>
+          <span class="tag">${esc(j.modalidade)}</span>${j.fase?`<span class="tag" style="background:#f1f5f9;color:#334155">${esc(j.fase)}</span>`:''}
+          <div class="vs" style="margin-top:6px">${esc(j.timeA)} <span class="sub">x</span> ${esc(j.timeB)} ${j.placar?`<span class="tag" style="background:#0b2a4a;color:#fff">${esc(j.placar)}</span>`:''}</div>
+          <p class="sub" style="margin-top:4px">🕒 ${destaque?fmtDataCurta(j.data)+' · ':''}${esc(j.hora || '--:--')} · <span class="bolinha" style="display:inline-grid;width:18px;height:18px;font-size:8px;vertical-align:middle;background:${esc(l.cor)}">${esc(l.sigla)}</span> ${esc(l.nome)}</p>
+          ${j.obs?`<p class="sub" style="margin-top:4px">📝 ${esc(j.obs)}</p>`:''}
+        </div>
+      </div>
+      <div class="acoes">
+        <button class="btn mini pri" data-act="ver" data-id="${j.localId}">📍 Local</button>
+        <button class="btn mini" data-act="rotaPara" data-id="${j.localId}">🧭 Rota</button>
+        <button class="btn mini" data-act="editarJogo" data-id="${j.id}">✏️</button>
+        <button class="btn mini perigo" data-act="excluirJogo" data-id="${j.id}">🗑</button>
+      </div></div>`;
+  }
+
+  function limparFormJogo(){
+    ['jId','jMod','jA','jB','jHora','jFase','jPlacar','jObs'].forEach(i => $(i).value = '');
+    $('jData').value = hojeISO();
+    $('tituloFormJogo').textContent = '➕ Cadastrar jogo';
+  }
+
+  function salvarJogo(){
+    const j = {
+      modalidade: $('jMod').value.trim(), timeA: $('jA').value.trim(), timeB: $('jB').value.trim(),
+      data: $('jData').value, hora: $('jHora').value, localId: $('jLocal').value,
+      fase: $('jFase').value.trim(), placar: $('jPlacar').value.trim(), obs: $('jObs').value.trim()
+    };
+    if (!j.modalidade || !j.timeA || !j.timeB) return toast('Preencha modalidade e as duas equipes');
+    if (!j.data || !j.hora) return toast('Informe data e hora');
+    if (!j.localId) return toast('Escolha o local');
+    const id = $('jId').value;
+    if (id) Object.assign(estado.jogos.find(x => x.id === id), j);
+    else estado.jogos.push({id: uid(), ...j});
+    salvar(); limparFormJogo(); renderJogos(); renderLocais();
+    toast('✅ Jogo salvo');
+  }
+
+  function editarJogo(id){
+    const j = estado.jogos.find(x => x.id === id); if (!j) return;
+    $('jId').value = j.id; $('jMod').value = j.modalidade; $('jA').value = j.timeA; $('jB').value = j.timeB;
+    $('jData').value = j.data; $('jHora').value = j.hora; $('jLocal').value = j.localId;
+    $('jFase').value = j.fase || ''; $('jPlacar').value = j.placar || ''; $('jObs').value = j.obs || '';
+    $('tituloFormJogo').textContent = '✏️ Editando jogo';
+    $('tituloFormJogo').scrollIntoView({behavior:'smooth'});
+  }
+
+  function excluirJogo(id){
+    if (!confirm('Excluir este jogo?')) return;
+    estado.jogos = estado.jogos.filter(j => j.id !== id);
+    salvar(); renderJogos(); renderLocais(); toast('Jogo excluído');
+  }
+
+  function atualizarSelects(){
+    const opts = estado.locais.map(l => `<option value="${l.id}">${esc(l.sigla)} · ${esc(l.nome)}</option>`).join('');
+    const manter = (id, html) => { const s = $(id), v = s.value; s.innerHTML = html; if ([...s.options].some(o => o.value === v)) s.value = v; };
+    manter('jLocal', opts);
+    manter('rDestino', opts);
+    manter('fLocal', '<option value="">Todos</option>' + opts);
+    manter('rOrigem', '<option value="eu">📍 Minha localização atual</option><option value="end">✍️ Digitar um endereço</option>'
+      + estado.locais.map(l => `<option value="${l.id}">🏟️ ${esc(l.sigla)} · ${esc(l.nome)}</option>`).join(''));
+    const mods = [...new Set([...estado.locais.flatMap(l => l.modalidades||[]), ...estado.jogos.map(j => j.modalidade)])].filter(Boolean).sort();
+    manter('fMod', '<option value="">Todas</option>' + mods.map(m => `<option>${esc(m)}</option>`).join(''));
+    $('rOrigemEnd').style.display = $('rOrigem').value === 'end' ? 'block' : 'none';
+  }
+
+  /* =================== EXPORTAR / IMPORTAR / DADOS OFICIAIS =================== */
+  function exportar(){
+    const dados = {...estado, atualizadoEm: Date.now()};
+    const blob = new Blob([JSON.stringify(dados, null, 2)], {type:'application/json'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'dados.json'; a.click();
+    toast('⬇️ dados.json baixado');
+  }
+  function importar(arquivo){
+    const r = new FileReader();
+    r.onload = () => {
+      try{
+        const d = JSON.parse(r.result);
+        if (!Array.isArray(d.locais) || !Array.isArray(d.jogos)) throw 0;
+        estado = {...d, oficialVisto: estado.oficialVisto || 0}; salvar(); tudo(); verTodos(); toast('✅ Dados importados');
+      }catch(e){ toast('Arquivo inválido'); }
+    };
+    r.readAsText(arquivo);
+  }
+  // Se existir um dados.json no repositório (GitHub Pages), ele vira a versão oficial para todos
+  async function carregarOficial(){
+    try{
+      return; // versão oficial remota indisponível nesta visualização offline
+      if (!r.ok) return;
+      const d = await r.json();
+      if (Array.isArray(d.locais) && Array.isArray(d.jogos) && (d.atualizadoEm||0) > (estado.oficialVisto||0)){
+        estado = {...d, oficialVisto: d.atualizadoEm}; salvar(); tudo();
+        toast('📢 Programação oficial atualizada');
+      }
+    }catch(e){}
+  }
+
+  /* =================== EVENTOS =================== */
+  function abrirAba(nome){
+    document.querySelectorAll('.aba').forEach(b => b.classList.toggle('on', b.dataset.aba === nome));
+    document.querySelectorAll('.secao').forEach(s => s.classList.toggle('on', s.id === 'sec-' + nome));
+    $('painel').classList.remove('fechado');
+  }
+  document.querySelectorAll('.aba').forEach(b => b.addEventListener('click', () => abrirAba(b.dataset.aba)));
+  $('alca').addEventListener('click', () => $('painel').classList.toggle('fechado'));
+  $('btnMenu').addEventListener('click', e => { e.stopPropagation(); $('menuBox').classList.toggle('on'); });
+  document.addEventListener('click', e => { if (!e.target.closest('#menuBox')) $('menuBox').classList.remove('on'); });
+  $('arqImport').addEventListener('change', e => { if (e.target.files[0]) importar(e.target.files[0]); e.target.value=''; });
+  $('arrastar').addEventListener('change', () => { desenharMarcadores(); toast($('arrastar').checked ? '✋ Arraste os pinos para ajustar' : '🔒 Pinos travados'); });
+  $('fMod').addEventListener('change', renderJogos);
+  $('fLocal').addEventListener('change', renderJogos);
+  $('rOrigem').addEventListener('change', () => $('rOrigemEnd').style.display = $('rOrigem').value === 'end' ? 'block' : 'none');
+  $('rModo').querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+    modoRota = b.dataset.modo;
+    $('rModo').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+  }));
+  $('cancelaPin').addEventListener('click', () => { desativarModoPin(); $('painel').classList.remove('fechado'); });
+  $('fabEu').addEventListener('click', async () => {
+    try{ await pegarMinhaPosicao(); map.flyTo([eu.lat, eu.lng], 16); toast('📍 Você está aqui'); }catch(e){ toast(e.message, 4000); }
+  });
+  $('fabSeguir').addEventListener('click', alternarSeguir);
+  $('fabTodos').addEventListener('click', verTodos);
+
+  // Delegação: todos os botões com data-act (inclusive dentro dos popups do mapa)
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-act]'); if (!b) return;
+    const id = b.dataset.id;
+    $('menuBox').classList.remove('on');
+    switch (b.dataset.act){
+      case 'ver': irPara(id); break;
+      case 'rotaPara': map.closePopup(); abrirAba('rota'); $('rDestino').value = id; tracarRota(); break;
+      case 'gmaps': abrirExterno('gmaps', id); break;
+      case 'waze': abrirExterno('waze', id); break;
+      case 'tracar': tracarRota(); break;
+      case 'limparRota': if (camadaRota) map.removeLayer(camadaRota); camadaRota = null; $('resultadoRota').innerHTML=''; break;
+      case 'seguirRota': if (!seguindo) alternarSeguir(); $('painel').classList.add('fechado'); break;
+      case 'geoLocal': buscarEnderecoLocal(); break;
+      case 'pinLocal': ativarModoPin(p => definirPosNovo(p, 'marcado no mapa')); break;
+      case 'salvarLocal': salvarLocal(); break;
+      case 'limparLocal': limparFormLocal(); break;
+      case 'editarLocal': editarLocal(id); break;
+      case 'excluirLocal': excluirLocal(id); break;
+      case 'salvarJogo': salvarJogo(); break;
+      case 'limparJogo': limparFormJogo(); break;
+      case 'editarJogo': editarJogo(id); break;
+      case 'excluirJogo': excluirJogo(id); break;
+      case 'exportar': exportar(); break;
+      case 'importar': $('arqImport').click(); break;
+      case 'verTodos': verTodos(); break;
+      case 'resetar':
+        if (confirm('Voltar aos locais originais e apagar jogos cadastrados neste aparelho?')){
+          estado = {locais: clone(LOCAIS_PADRAO), jogos: [], atualizadoEm: 0, oficialVisto: 0};
+          salvar(); tudo(); verTodos(); refinarAproximados();
+        }
+        break;
+    }
+  });
+
+  /* =================== INÍCIO =================== */
+  function tudo(){ desenharMarcadores(); renderLocais(); renderJogos(); }
+  tudo(); limparFormJogo(); verTodos();
+  carregarOficial().then(refinarAproximados);
+  setInterval(renderJogos, 60000); // atualiza "próximo jogo" a cada minuto
+})();
+</script>
+</body>
+</html>
